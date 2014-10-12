@@ -6,7 +6,7 @@ from VideoCapture import Device
 import ImageFilter
 import serial
 
-(width, height) = (1000, 700)
+(width, height) = (1000, 750)
 background = (255,255,255)
 screen = pygame.display.set_mode((width, height))
 screen.fill(background)
@@ -14,25 +14,14 @@ pygame.init()
 
 pygame.display.set_caption('MicroControladores')
 
-#cam = Device()		# inicia la camara
-def Load_Image(sFile,transp=False):
-    try: image = pygame.image.load(sFile)
-    except pygame.error,message:
-           raise SystemExit,message
-    image = image.convert()
-    if transp:
-       color = image.get_at((0,0))
-       image.set_colorkey(color,RLEACCEL)
-    return image
-
-
-full = pygame.Surface((1000, 700))
+full = pygame.Surface((1000, 800))
 full.fill((255,255,255))
 secA = pygame.Surface((600, 600))
 secB = pygame.Surface((300,300))
 secC = pygame.Surface((300,290))
+secD = pygame.Surface((400, 80))
 secMenu = pygame.Surface((250,300))
-
+secD.fill((255,255,255))
 
 # ------------ Carga imagenes ----------------------------
 rutaCarpeta = "C:\\Imagenes"
@@ -59,6 +48,17 @@ def cargaSecB(img):
 		os.remove('C:\\a.bmp')			# elimina archivo
 	except:
 		print "error al cargar"
+	return
+def cargaSecD():
+	fuente = pygame.font.Font(None, 30)
+	# -------------- etiquetas ------------------
+	etiqueta = fuente.render('WebCam',1, (0,0,0))	
+	secD.blit(etiqueta, (0, 10))
+	if onCam > 0:
+		color = (255,0,0)
+	else:
+		color = (128,128,128)
+	pygame.draw.circle(secD, color, (115,15), 15)
 	return
 def setMenu():
 	# --------------- Menu -----------------
@@ -88,24 +88,27 @@ def actualiza():
 	if onMenu > 0:		
 		setMenu()
 		secA.blit(secMenu, (20,30))		
+	cargaSecD()
 	full.blit(secA,(10,40))
 	full.blit(secB,(620, 40))
 	full.blit(secC, (620, 350))	
-	screen.blit(full,(0,0))
+	full.blit(secD,(10, 650))
+	screen.blit(full,(30,0))
 	return
 
 cam = Device()
-def getCam():
+def getCam():	# carga imagen de camara en C
 	image = cam.getImage()		# captura la imagen
 	image = image.resize(secC.get_size())
 	camar = pygame.image.fromstring(image.tostring(), image.size, 'RGB')
 	secC.blit(camar,(0,0))
 	return
+	
 run = True
-iImage= 0
-onCam = -1
-onMenu = -1
-iMenu = 0
+iImage= 0	#id de imagen actual
+onCam = -1	# on/off camara
+onMenu = -1	# on/off Menu
+iMenu = 0	# id menu seleccionado	
 ImagenCargadaA = imgs[0]
 ImagenCargadaB = ImagenCargadaA 
 
@@ -124,7 +127,49 @@ while run:
 	# ----------------------------------
 	# ----------- Menu -----------------
 	opcion = s.readline()
-	
+	if opcion == "21":	# button Power - enciende/apaga Camara
+		onCam = -onCam
+	if opcion == "9":	# button 0 - camptura camara
+		if onCam > 0:
+				ImagenCargadaA = cam.getImage()
+	if opcion == "0":		# button 0 - Menu
+		onMenu = -onMenu
+		iMenu = 0
+	# ------------ Recorre Menu ---------
+	if onMenu > 0:		# si activa el menu
+		if opcion == "16":	# CH+
+			if iMenu > 0:
+				iMenu -= 1
+		elif opcion == "17":	# CH+-
+			if iMenu < 16:
+				iMenu += 1
+		elif opcion == "18":	# Vol+
+			if iMenu == 0:		# Grey
+				print 
+			elif iMenu == 1:		# Blend
+				ImagenCargadaA = Image.blend(ImagenCargadaA.resize(secA.get_size()), imgs[iImage+1].resize(secA.get_size()), 0.5)
+			elif iMenu == 2:		# Flip Horizontal
+				ImagenCargadaA = ImagenCargadaA.transpose(Image.FLIP_LEFT_RIGHT)
+			elif iMenu == 3:		# Flip Vertical
+				ImagenCargadaA = ImagenCargadaA.transpose(Image.FLIP_TOP_BOTTOM)
+			elif iMenu == 4:		# Rotate 90
+				ImagenCargadaA = ImagenCargadaA.transpose(Image.ROTATE_90)
+			elif iMenu == 5:		# Rotate 180
+				ImagenCargadaA = ImagenCargadaA.transpose(Image.ROTATE_180)
+			elif iMenu == 6:		# Rotate 180
+				ImagenCargadaA = ImagenCargadaA.filter(ImageFilter.BLUR)
+	else:	# menu desactivado
+		if opcion == "16":	# CH+
+			if iImage < len(imgs)-1:
+				iImage += 1
+				ImagenCargadaA = imgs[iImage]
+				ImagenCargadaB = ImagenCargadaA
+		elif opcion == "17":	# CH+-
+			if iImage > 0:
+				iImage -= 1 
+				ImagenCargadaA = imgs[iImage]
+				ImagenCargadaB = ImagenCargadaA
+	# ----------------------------------
 	
 	# ----------------------------------
 	even = pygame.event.get()
