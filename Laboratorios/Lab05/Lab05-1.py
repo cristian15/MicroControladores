@@ -1,3 +1,10 @@
+# -----------------------------------------------
+# ----- Nombre: Cristian Beltran Concha ---------
+# ----- Prof: Luis Caro Saldivia ----------------
+# ----- Asignatura: MicroControladores ----------
+# -----------------------------------------------
+
+
 import pygame
 from pygame.locals import *
 from PIL import Image
@@ -5,6 +12,7 @@ import os
 from VideoCapture import Device
 import ImageFilter
 import serial
+import time
 
 (width, height) = (1000, 750)
 background = (255,255,255)
@@ -42,12 +50,12 @@ def cargaSecB(img):
 	foto = img.resize(secB.get_size())
 	foto = foto.convert('L')		# convierte a B/N
 	try:
-		foto.save("C:\\a.bmp")			# guarda la foto B/N
-		fotoSu = pygame.image.load('C:\\a.bmp')		# Carga la foto B/N
+		foto.save("a.bmp")			# guarda la foto B/N
+		fotoSu = pygame.image.load('a.bmp')		# Carga la foto B/N
 		secB.blit(fotoSu,(0,0))	
-		os.remove('C:\\a.bmp')			# elimina archivo
+		os.remove('a.bmp')			# elimina archivo
 	except:
-		print "error al cargar"
+		print "Error al cargar Imagen"
 	return
 def cargaSecD():
 	fuente = pygame.font.Font(None, 30)
@@ -95,7 +103,6 @@ def actualiza():
 	full.blit(secD,(10, 650))
 	screen.blit(full,(30,0))
 	return
-
 cam = Device()
 def getCam():	# carga imagen de camara en C
 	image = cam.getImage()		# captura la imagen
@@ -112,7 +119,7 @@ iMenu = 0	# id menu seleccionado
 ImagenCargadaA = imgs[0]
 ImagenCargadaB = ImagenCargadaA 
 
-s = serial.Serial(4)		#COM5
+s = serial.Serial(2)		#COM5
 s.baurate = 9600
 s.timeout = 0
 while run:
@@ -127,12 +134,15 @@ while run:
 	# ----------------------------------
 	# ----------- Menu -----------------
 	opcion = s.readline()
+	print opcion
 	if opcion == "21":	# button Power - enciende/apaga Camara
 		onCam = -onCam
 	if opcion == "9":	# button 0 - camptura camara
 		if onCam > 0:
 				ImagenCargadaA = cam.getImage()
-	if opcion == "0":		# button 0 - Menu
+	if opcion == "96":		# button Menu - Menu
+		print "menu"
+		time.sleep(.5)
 		onMenu = -onMenu
 		iMenu = 0
 	# ------------ Recorre Menu ---------
@@ -140,12 +150,19 @@ while run:
 		if opcion == "16":	# CH+
 			if iMenu > 0:
 				iMenu -= 1
-		elif opcion == "17":	# CH+-
-			if iMenu < 16:
+		elif opcion == "17":	# CH-
+			if iMenu < 6:		#  Tope del menu
 				iMenu += 1
 		elif opcion == "18":	# Vol+
 			if iMenu == 0:		# Grey
-				print 
+				try:
+					foto = ImagenCargadaA.convert('L')		# convierte a B/N					
+					foto.save("c.bmp")			# guarda la foto B/N
+					fotoSu = pygame.image.load('c.bmp')		# Carga la foto B/N
+					ImagenCargadaA = Image.fromstring('RGB',foto.size,pygame.image.tostring(fotoSu,'RGB',False))
+					os.remove('c.bmp')			# elimina archivo
+				except:
+					print "Error Cargar Imagen" 
 			elif iMenu == 1:		# Blend
 				ImagenCargadaA = Image.blend(ImagenCargadaA.resize(secA.get_size()), imgs[iImage+1].resize(secA.get_size()), 0.5)
 			elif iMenu == 2:		# Flip Horizontal
@@ -205,7 +222,14 @@ while run:
 		if cKey[pygame.K_RETURN]:
 			if onMenu > 0:
 				if iMenu == 0:		# Grey
-					print 
+					try:
+						foto = ImagenCargadaA.convert('L')		# convierte a B/N					
+						foto.save("c.bmp")			# guarda la foto B/N
+						fotoSu = pygame.image.load('c.bmp')		# Carga la foto B/N
+						ImagenCargadaA = Image.fromstring('RGB',foto.size,pygame.image.tostring(fotoSu,'RGB',False))
+						os.remove('c.bmp')			# elimina archivo
+					except:
+						print "Error Cargar Imagen"
 				elif iMenu == 1:		# Blend
 					ImagenCargadaA = Image.blend(ImagenCargadaA.resize(secA.get_size()), imgs[iImage+1].resize(secA.get_size()), 0.5)
 				elif iMenu == 2:		# Flip Horizontal

@@ -1,0 +1,5 @@
+
+main: irin B.4, b0				; Read IR key press
+	sertxd( #b0)	; envia el codigo del boton
+	pause 500
+	goto main   					

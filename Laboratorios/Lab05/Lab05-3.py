@@ -1,3 +1,10 @@
+# -----------------------------------------------
+# ----- Nombre: Cristian Beltran Concha ---------
+# ----- Prof: Luis Caro Saldivia ----------------
+# ----- Asignatura: MicroControladores ----------
+# -----------------------------------------------
+
+
 import pygame
 import math
 import random as RA
@@ -16,8 +23,9 @@ mesa = pygame.Surface((900,650))
 mesa.fill((0,0,0))
 pygame.draw.rect(mesa, (20,255,30), (0,0, mesa.get_width(), mesa.get_height() ), 10)
 
+# -------------  Clase para las Paletas ----------------
 class Player():
-	def __init__(self, (x,y), color, (width, height), puntaje, name ):
+	def __init__(self, (x,y), color, (width, height), puntaje, name, vel ):
 		self.x = x
 		self.y = y
 		self.color = color
@@ -25,18 +33,19 @@ class Player():
 		self.height = height
 		self.puntaje = puntaje
 		self.name = name
+		self.vel = vel
 		
 	def display(self):
 		pygame.draw.rect(mesa, self.color, (self.x, self.y, self.width, self.height))
 		fuente = pygame.font.Font(None, 30)
-		# -------------- etiquetas ------------------
-		etiqueta = fuente.render(self.name +": " +str(self.puntaje),1, self.color)	
-		
+		# -------------- etiquetas de nombre y puntaje ------------------
+		etiqueta = fuente.render(self.name +": " +str(self.puntaje),1, self.color)			
 		screen.blit(etiqueta, (self.x, 20))		
 	def move(self, dir):
 		if self.y + dir > 15 and self.y + dir < mesa.get_height() - self.height -15:
-			self.y += 2*dir
-			
+			self.y += self.vel*dir
+# ------------------------------------------------------------		
+# ------------------ Clase para la pelota --------------------	
 class ball():
 	def __init__(self, (x,y),color, size, vel, angle):
 		self.x = x
@@ -52,6 +61,7 @@ class ball():
 		self.x += math.sin(self.angle)*self.vel
 		self.y += math.cos(self.angle)*self.vel
 	def bounce(self, P):
+		# --------  rebote con las paredes --------------------
 		if self.x > mesa.get_width() - self.size :	
 			self.x = 2*(mesa.get_width() - self.size) - self.x      
 			self.angle = -self.angle
@@ -63,7 +73,8 @@ class ball():
 			self.angle = math.pi - self.angle
 		elif self.y < self.size:
 			self.y = 2*self.size - self.y
-			self.angle = math.pi - self.angle			
+			self.angle = math.pi - self.angle		
+		# ----------------- rebote con las paletas -----------------------
 		if P.x < mesa.get_width()/2: # si es la paleta izquierda
 			if self.x < self.size + P.x + P.width and self.y > P.y and self.y < P.y+P.height:
 				self.x = P.x + P.width+ self.size
@@ -92,30 +103,32 @@ class ball():
 		return P
 # ----------- Inicia jugadores -----------------
 player = []
-player.append( Player((30, 100), (0,0,255), (20,100), 0, "Player 1"))
-player.append( Player((mesa.get_width()-50, 100), (255,0,0), (20,100), 0, "Player 2"))
+player.append( Player((30, 100), (0,0,255), (20,100), 0, "Player 1", 25))
+player.append( Player((mesa.get_width()-50, 100), (255,0,0), (20,100), 0, "Player 2", 10))
 player[0].display()
 player[1].display()
 
 # -----------------------------------------
-pelota = ball((mesa.get_width()/2, mesa.get_height()/2), (20,255,30), 15, 2, RA.uniform(0,math.pi))
+pelota = ball((mesa.get_width()/2, mesa.get_height()/2), (20,255,30), 15,3 , RA.uniform(0,math.pi))
 pelota.display()
 screen.blit(mesa, (50,90))
 
-s = serial.Serial(4)
+s = serial.Serial(2)		# COM3 PICAXE
 s.baurate = 9600
 s.timeout = 0
 run = True
 while run:
-	button = s.readline()
+	button = s.readline()			# lee el boton del Control
 	even = pygame.event.get()
 	cKey = pygame.key.get_pressed()
 	screen.fill((0,0,0))
 	mesa.fill((0,0,0))
 	pygame.draw.rect(mesa, (20,255,30), (0,0, mesa.get_width(), mesa.get_height() ), 10)
 	pelota.move()
-	player[0] = pelota.anota(player[0])
+	# -------- espera saber si anoto uno de los jugadores 
+	player[0] = pelota.anota(player[0])		
 	player[1] = pelota.anota(player[1])
+	# ----------------------------------------
 	pelota.bounce(player[0])
 	pelota.bounce(player[1])
 	pelota.display()
@@ -124,7 +137,7 @@ while run:
 	player[1].display()	
 	
 	screen.blit(mesa, (50,90))	
-	
+	# ------------- Mueve con Control remoto ----------
 	if button == "16": 		# button CK+
 		player[0].move(-1)
 	elif button == "17":   # button CH-
@@ -133,7 +146,8 @@ while run:
 		player[1].move(1)
 	elif button == "19": 	#button Vol-
 		player[1].move(-1)
-	
+	# --------------------------------------------------
+	# ------------ Mueve con teclado -------------------
 	for e in even:
 		if e.type == pygame.QUIT:
 			run = False
